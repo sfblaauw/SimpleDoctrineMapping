@@ -16,12 +16,14 @@ namespace Mmoreram\SimpleDoctrineMapping\Mapping;
 use Doctrine\Common\Persistence\Mapping\ClassMetadata;
 use Doctrine\Common\Persistence\Mapping\Driver\FileDriver;
 use Doctrine\Common\Persistence\Mapping\Driver\MappingDriver;
+use Doctrine\Common\Persistence\Mapping\Driver\MappingDriverChain as BaseMappingDriverChain;
 use Doctrine\Common\Persistence\Mapping\MappingException;
+use Doctrine\Common\Persistence\Mapping\Driver\AnnotationDriver;
 
 /**
  * Class MappingDriverChain
  */
-class MappingDriverChain implements MappingDriver
+class MappingDriverChain extends BaseMappingDriverChain
 {
     /**
      * The default driver.
@@ -33,7 +35,7 @@ class MappingDriverChain implements MappingDriver
     /**
      * @var array
      */
-    private $drivers = array();
+    private $drivers = [];
 
     /**
      * Gets the default driver.
@@ -100,9 +102,11 @@ class MappingDriverChain implements MappingDriver
          * @var $driver FileDriver
          */
         foreach ($this->drivers as $driver) {
+            if ($driver instanceof AnnotationDriver) {
+                continue;
+            }
 
             $namespace = $driver->getGlobalBasename();
-
             if ($this->classNameIsAllowed($className, $namespace)) {
                 $driver->loadMetadataForClass($className, $metadata);
 
@@ -129,13 +133,16 @@ class MappingDriverChain implements MappingDriver
      */
     public function getAllClassNames()
     {
-        $classNames = array();
-        $driverClasses = array();
+        $classNames = [];
+        $driverClasses = [];
 
         /**
          * @var $driver FileDriver
          */
         foreach ($this->drivers as $driver) {
+            if ($driver instanceof AnnotationDriver) {
+                continue;
+            }
 
             $namespace = $driver->getGlobalBasename();
             $oid = spl_object_hash($driver);
@@ -174,6 +181,10 @@ class MappingDriverChain implements MappingDriver
          * @var $driver FileDriver
          */
         foreach ($this->drivers as $driver) {
+            if ($driver instanceof AnnotationDriver) {
+                continue;
+            }
+
             $namespace = $driver->getGlobalBasename();
             if ($this->classNameIsAllowed($className, $namespace)) {
                 return $driver->isTransient($className);
